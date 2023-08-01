@@ -1,6 +1,6 @@
-import Avatar from "./Avatar";
+import Avatar from "./Avatar"
 
-const Contact = ({ id, username, onClick, selected, online }) => {
+const Contact = ({ id, username, onClick, selected, online, photo = null }) => {
   return (
     <div
       key={id}
@@ -10,13 +10,18 @@ const Contact = ({ id, username, onClick, selected, online }) => {
         (selected ? "bg-blue-50" : "")
       }
     >
-      {selected && <div className="w-1 h-12 bg-blue-500 rounded-r-md"></div>}
+      {selected && <div className="w-1 h-14 bg-blue-500 rounded-r-md"></div>}
       <div className="flex gap-2 py-2 pl-4 items-center">
-        <Avatar online={online} username={username} userId={id} />
-        <span className="text-gray-800">{username}</span>
+        <Avatar
+          online={online}
+          username={username}
+          userId={id}
+          photoURL={photo}
+        />
+        <span className="text-gray-800 font-medium text-lg ">{username}</span>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Contact;
+export default Contact

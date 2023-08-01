@@ -1,99 +1,104 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import Logo from "./Logo";
-import { UserContext } from "./UserContext";
-import { uniqBy } from "lodash";
-import axios from "axios";
-import Contact from "./Contact";
+import { useContext, useEffect, useRef, useState } from "react"
+import { UserContext } from "./UserContext"
+import { uniqBy } from "lodash"
+import axios from "axios"
+import Contact from "./Contact"
+import Logo from "./Logo" // replace avater
 
 const Chat = () => {
-  const [ws, setWs] = useState(null);
-  const [onlinePeople, setOnlinePeople] = useState({});
-  const [offlinePeople, setOfflinePeople] = useState({});
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [newMessageText, setNewMessageText] = useState("");
-  const [messages, setMessages] = useState([]);
-  const { username, id, setId, setUsername } = useContext(UserContext);
-  const divUnderMessages = useRef();
+  const [ws, setWs] = useState(null)
+  const [onlinePeople, setOnlinePeople] = useState({})
+  const [offlinePeople, setOfflinePeople] = useState({})
+  const [selectedUserId, setSelectedUserId] = useState(null)
+  const [newMessageText, setNewMessageText] = useState("")
+  const [messages, setMessages] = useState([])
+  const { username, id, setId, setUsername, profile, setProfile } =
+    useContext(UserContext)
+  const divUnderMessages = useRef()
 
   useEffect(() => {
-    connectToWs();
-  }, [selectedUserId]);
+    connectToWs()
+  }, [selectedUserId])
 
   function connectToWs() {
-    const ws = new WebSocket(import.meta.env.VITE_WS_URL); //https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
-    setWs(ws);
-    ws.addEventListener("message", handleMessage);
+    const ws = new WebSocket(import.meta.env.VITE_WS_URL) //https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+    setWs(ws)
+    ws.addEventListener("message", handleMessage)
     ws.addEventListener("close", () => {
       setTimeout(() => {
-        console.log("Disconnected. Trying to reconnect");
-        connectToWs();
-      }, 1000);
-    });
+        //console.log("Disconnected. Trying to reconnect")
+        connectToWs()
+      }, 1000)
+    })
   }
   useEffect(() => {
     if (selectedUserId) {
       axios.get("/messages/" + selectedUserId).then((res) => {
-        setMessages(res.data);
-      });
+        setMessages(res.data)
+      })
     }
-  }, [selectedUserId]);
+  }, [selectedUserId])
 
   useEffect(() => {
     axios.get("/people").then((res) => {
       const offlinePeopleArr = res.data
         .filter((p) => p._id !== id)
-        .filter((p) => !Object.keys(onlinePeople).includes(p._id));
-      const offlinePeople = {};
+        .filter((p) => !Object.keys(onlinePeople).includes(p._id))
+      const offlinePeople = {}
       offlinePeopleArr.forEach((p) => {
-        offlinePeople[p._id] = p;
-      });
-      setOfflinePeople(offlinePeople);
-    });
-  }, [onlinePeople]);
+        offlinePeople[p._id] = p
+      })
+      setOfflinePeople(offlinePeople)
+    })
+  }, [onlinePeople])
 
   function showOnlinePeople(peopleArray) {
-    const people = {};
-    peopleArray.forEach(({ userId, username }) => {
-      people[userId] = username;
-    });
-    setOnlinePeople(people);
+    const people = {}
+    peopleArray.forEach(({ userId, username, photoURL }) => {
+      people[userId] = username + "," + photoURL
+    })
+    //console.log(people)
+    setOnlinePeople(people)
   }
 
   function handleMessage(ev) {
-    const messageData = JSON.parse(ev.data);
-    console.log({ ev, messageData });
+    const messageData = JSON.parse(ev.data)
+    //console.log({ ev, messageData })
     if ("online" in messageData) {
-      showOnlinePeople(messageData.online);
+      showOnlinePeople(messageData.online)
     } else if ("text" in messageData) {
       if (messageData.sender === selectedUserId) {
-        setMessages((prev) => [...prev, { ...messageData }]);
+        setMessages((prev) => [...prev, { ...messageData }])
       }
     }
   }
 
   function logout() {
     axios.post("/logout").then(() => {
-      setWs(null);
-      setId(null);
-      setUsername(null);
-    });
+      setWs(null)
+      setId(null)
+      setUsername(null)
+      setProfile(null)
+    })
   }
 
+  function addgroup() {}
+
   function sendMessage(ev, file = null) {
-    if (ev) ev.preventDefault(); //form submit hoga to page reload hota h isi liye preventDefault krty jab bhi button ki type submit hoti
+    if (ev) ev.preventDefault() //form submit hoga to page reload hota h isi liye preventDefault krty jab bhi button ki type submit hoti
     ws.send(
       JSON.stringify({
         recipient: selectedUserId,
         text: newMessageText,
         file,
       })
-    );
+    )
     if (file) {
       axios.get("/messages/" + selectedUserId).then((res) => {
-        setMessages(res.data);
-      });
+        setMessages(res.data)
+      })
     } else {
-      setNewMessageText("");
+      setNewMessageText("")
       setMessages((prev) => [
         ...prev,
         {
@@ -102,44 +107,70 @@ const Chat = () => {
           recipient: selectedUserId,
           _id: Date.now(),
         },
-      ]);
+      ])
     }
   }
 
   function sendFile(ev) {
-    const reader = new FileReader();
-    reader.readAsDataURL(ev.target.files[0]); //converting into base64 from binary
+    const reader = new FileReader()
+    reader.readAsDataURL(ev.target.files[0]) //converting into base64 from binary
     reader.onload = () => {
       sendMessage(null, {
         name: ev.target.files[0].name,
         data: reader.result,
-      });
-    };
+      })
+    }
   }
 
   useEffect(() => {
-    const div = divUnderMessages.current;
+    const div = divUnderMessages.current
     if (div) {
-      div.scrollIntoView({ behavior: "smooth", block: "end" });
+      div.scrollIntoView({ behavior: "smooth", block: "end" })
       //div.scrollTop = div.scrollHeight;
     }
-  }, [messages]);
+  }, [messages])
 
-  const onlinePeopleExclOurUser = { ...onlinePeople };
-  delete onlinePeopleExclOurUser[id];
+  // const onlinePeopleExclOurUser = { ...onlinePeople }
+  // delete onlinePeopleExclOurUser[id] don't recommend becuase it create undefined holes
+  const { [id]: _, ...onlinePeopleExclOurUser } = onlinePeople
 
-  const messagesWithoutDupes = uniqBy(messages, "_id");
+  const messagesWithoutDupes = uniqBy(messages, "_id")
 
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 flex flex-col">
         <div className="flex-grow">
-          <Logo />
+          {/* <Logo /> */}
+          <div className="flex items-center justify-items-start">
+            <Logo />
+            <button
+              title="Add group"
+              className="flex gap-3 bg-blue-100 border rounded-md py-1 px-2 ml-32 font-bold text-gray-500"
+              onClick={addgroup}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+                />
+              </svg>
+              New Group
+            </button>
+          </div>
           {Object.keys(onlinePeopleExclOurUser).map((userId) => (
             <Contact
               key={userId}
               id={userId}
-              username={onlinePeopleExclOurUser[userId]}
+              username={onlinePeopleExclOurUser[userId].split(",")[0]}
+              photo={onlinePeopleExclOurUser[userId].split(",")[1]}
               online={true}
               onClick={() => setSelectedUserId(userId)}
               selected={userId === selectedUserId}
@@ -150,6 +181,7 @@ const Chat = () => {
               key={userId}
               id={userId}
               username={offlinePeople[userId].username}
+              photo={offlinePeople[userId].photoURL}
               online={false}
               onClick={() => setSelectedUserId(userId)}
               selected={userId === selectedUserId}
@@ -157,37 +189,67 @@ const Chat = () => {
           ))}
         </div>
 
-        <div className="p-2 text-center flex items-center justify-center">
-          <span className="mr-2 text-sm text-gray-600 flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                fillRule="evenodd"
-                d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                clipRule="evenodd"
-              />
-            </svg>
+        <div className="p-2 text-center flex items-center justify-around">
+          <span className="mr-2 text-sm text-gray-600 flex items-center gap-3 text-blue-900 font-bold text-2xl font-serif">
+            <div title="Change Profile" className="cursor-pointer">
+              {profile ? (
+                <img
+                  src={`${import.meta.env.VITE_API_BASE_URL}/dp/${profile}`}
+                  className=" w-12 h-12 rounded-full"
+                />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-8 h-8"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </div>
 
             {username}
           </span>
           <button
+            title="Logout"
             onClick={logout}
-            className="text-sm bg-blue-100 py-1 px-2 text-gray-500 border rounded-sm"
+            className="text-md bg-blue-100 py-2 px-3 text-gray-500 border font-bold rounded-lg flex gap-3"
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm5.03 4.72a.75.75 0 010 1.06l-1.72 1.72h10.94a.75.75 0 010 1.5H10.81l1.72 1.72a.75.75 0 11-1.06 1.06l-3-3a.75.75 0 010-1.06l3-3a.75.75 0 011.06 0z"
+                clipRule="evenodd"
+              />
+            </svg>
             Logout
           </button>
         </div>
       </div>
-      <div className="flex flex-col bg-blue-50 w-2/3 p-2">
+      <div className="flex flex-col bg-blue-100 w-2/3 p-2 border border-l-gray-300">
         <div className="flex-grow">
           {!selectedUserId && (
-            <div className="flex h-full flex-grow items-center justify-center">
-              <div className="text-gray-300">
-                &larr; Select a person from the Sidebar
+            <div className="flex h-full flex-grow items-center justify-center font-bold">
+              <div className="text-gray-400 flex gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-6 h-6 rotate-180"
+                >
+                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+                Select a person from the Sidebar
               </div>
             </div>
           )}
@@ -295,7 +357,7 @@ const Chat = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Chat;
+export default Chat
