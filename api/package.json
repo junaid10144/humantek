@@ -1,6 +1,6 @@
 {
   "name": "ChatApp-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A real-time chat application for users to connect and communicate",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
   "author": "Junaid Saleem",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/junaidsaleem10144/VacationVibe/issues"
+    "url": "https://github.com/junaid10144/chatApp/issues"
   },
-  "homepage": "https://github.com/junaidsaleem10144/chatApp"
+  "homepage": "https://chatapp-jnd.vercel.app/"
 }

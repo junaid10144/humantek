@@ -2,6 +2,12 @@
 
 This is a chat application created using Websockets communication and built with the MERN stack. The application allows users to send and receive messages in real-time and stores the messages in a database. It provides a seamless experience for users to engage in conversations and exchange messages, files in real-time. With ChatApp, users can easily connect with friends, colleagues, or any other individuals and have interactive discussions.
 
+**To experience VacationVibe firsthand, please visit our website for a live demo:**
+
+[![Start Your Vacation Adventure](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCimPct1-sWHn0hxqrNlz9O_JQSw7544mWwHOY4QFijdkZb3KvfHQuAKVdHv8I4aCGAyQ&usqp=CAU)](https://chat-app-jnd.vercel.app/)
+
+[**Visit Website for Live Demo**](https://chat-app-jnd.vercel.app/)
+
 ## Key Features
 
 - **Real-time Messaging:** Users can exchange messages with others in real-time, providing instant communication.
@@ -10,6 +16,8 @@ This is a chat application created using Websockets communication and built with
 - **File Upload:** Users can upload files (e.g., images, documents) to share with other users during conversations.
 - **WebSocket Communication:** The project utilizes WebSockets to establish real-time, bidirectional communication between the server and clients. This enables instant messaging and updates without the need for frequent page refreshes.
 - **Secure Authentication:** User passwords are securely stored using the bcrypt hashing algorithm. JWT (JSON Web Tokens) are used for authentication and authorization.
+- **User Profile:** Each user has a profile that displays their username and profile picture. Users can update their profile picture, providing a personalized touch to their chat experience.
+- **Notifications:** Real-time notifications are provided when a new message is received, even if the user is in a different chat room or has the application minimized.
 - **Avatar Generation:** Avatars are generated based on the username to provide personalized profile images for users.
 
 ## Technology Stack
@@ -27,7 +35,7 @@ The ChatApp was developed using the following technologies:
 
 To get started with the chat application, follow the steps below:
 
-1. Clone the repository: `git clone https://github.com/junaidsaleem10144/chatApp.git`
+1. Clone the repository: `git clone https://github.com/junaid10144/chatApp.git`
 2. Navigate to the project directory: `cd chatApp`
 3. Install the dependencies:
    - Backend: Navigate to the `api` folder and run `npm install`
@@ -37,7 +45,7 @@ To get started with the chat application, follow the steps below:
    - Backend: In the `api` folder, run `npm run start`
    - Frontend: In the `client` folder, run `npm run dev`
 
-Now, you can access the chat app by opening your browser and visiting `http://localhost:4000`.
+Now, you can access the chat app by opening your browser and visiting `http://localhost:5173`.
 
 ## Folder Structure
 
@@ -58,6 +66,7 @@ We would like to express our gratitude to the following resources and libraries 
 - [dotenv](https://www.npmjs.com/package/dotenv): Module for loading environment variables from a .env file.
 - [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken): Library for generating and verifying JSON Web Tokens (JWT).
 - [mongoose](https://mongoosejs.com/): Object Data Modeling (ODM) library for MongoDB.
+- [multer](https://www.npmjs.com/package/multer): Middleware for handling multipart/form-data, used for file uploading.
 - [express](https://expressjs.com/): Web framework for Node.js.
 - [ws](https://www.npmjs.com/package/ws): JavaScript library for enabling real-time, bidirectional communication between clients and servers using websockets.
 
