@@ -15,7 +15,7 @@ const Avatar = ({ userId, username, online, photoURL }) => {
     <div
       className={"w-12 h-12 relative rounded-full flex items-center " + color}
     >
-      {photoURL === "null" ? (
+      {photoURL === "null" || photoURL === null ? (
         <div className="w-full text-center opacity-70 text-lg font-bold font-serif">
           {username[0]}
         </div>
@@ -23,7 +23,7 @@ const Avatar = ({ userId, username, online, photoURL }) => {
         <img
           src={`${import.meta.env.VITE_API_BASE_URL}/dp/${photoURL}`}
           alt=""
-          className="w-full rounded-full"
+          className="w-full rounded-full object-cover"
         />
       )}
       {online && (

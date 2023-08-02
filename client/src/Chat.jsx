@@ -4,6 +4,8 @@ import { uniqBy } from "lodash"
 import axios from "axios"
 import Contact from "./Contact"
 import Logo from "./Logo" // replace avater
+import ContextMenu from "./ContextMenu"
+import PhotoPicker from "./PhotoPicker"
 
 const Chat = () => {
   const [ws, setWs] = useState(null)
@@ -15,6 +17,82 @@ const Chat = () => {
   const { username, id, setId, setUsername, profile, setProfile } =
     useContext(UserContext)
   const divUnderMessages = useRef()
+  const [grabPhoto, setGrabPhoto] = useState(false)
+
+  const [contextMenuCordinates, setContextMenuCordinates] = useState({
+    x: 0,
+    y: 0,
+  })
+  const [isContextMenuVisible, setIsContextMenuVisible] = useState(false)
+  const showContextMenu = (e) => {
+    e.preventDefault()
+    setContextMenuCordinates({ x: e.pageX, y: e.pageY - 170 })
+    setIsContextMenuVisible(true)
+  }
+  const contextMenuOptions = [
+    {
+      name: "Upload Photo",
+      callback: async () => {
+        setGrabPhoto(true)
+        //setIsContextMenuVisible(false)
+        //--------------
+      },
+    },
+    {
+      name: "Remove Photo",
+      callback: async () => {
+        try {
+          // Send a POST request to remove the profile photo
+          await axios.post(
+            "/upload-profile-image",
+            { remove: true }, // Indicate that we want to remove the profile photo
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          )
+
+          // If the request is successful, set the profile photo to null
+          setProfile(null)
+        } catch (error) {
+          console.error("Error removing profile photo:", error)
+        }
+      },
+    },
+  ]
+
+  const photoPickerChange = async (e) => {
+    const file = e.target.files[0]
+    const formData = new FormData()
+    formData.append("profileImage", file) // "profileImage" is the name of the field in the backend to receive the image
+
+    try {
+      const response = await axios.post("upload-profile-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+
+      // After successful upload, update the profile state with the filename or URL received from the backend
+      setProfile(response.data) // Assuming the backend responds with the filename of the saved image
+    } catch (error) {
+      // Handle the error if the upload fails
+      console.error("Error uploading profile image:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (grabPhoto) {
+      const data = document.getElementById("photo-picker")
+      data.click()
+      document.body.onfocus = (e) => {
+        setTimeout(() => {
+          setGrabPhoto(false)
+        }, 1000)
+      }
+    }
+  }, [grabPhoto])
 
   useEffect(() => {
     connectToWs()
@@ -140,7 +218,6 @@ const Chat = () => {
     <div className="flex h-screen">
       <div className="bg-white w-1/3 flex flex-col">
         <div className="flex-grow">
-          {/* <Logo /> */}
           <div className="flex items-center justify-items-start">
             <Logo />
             <button
@@ -191,11 +268,17 @@ const Chat = () => {
 
         <div className="p-2 text-center flex items-center justify-around">
           <span className="mr-2 text-sm text-gray-600 flex items-center gap-3 text-blue-900 font-bold text-2xl font-serif">
-            <div title="Change Profile" className="cursor-pointer">
+            <div
+              title="Change Profile"
+              className="cursor-pointer"
+              onClick={(e) => showContextMenu(e)}
+              id="context-opener"
+            >
               {profile ? (
                 <img
                   src={`${import.meta.env.VITE_API_BASE_URL}/dp/${profile}`}
-                  className=" w-12 h-12 rounded-full"
+                  className=" w-12 h-12 rounded-full object-cover"
+                  alt=""
                 />
               ) : (
                 <svg
@@ -217,6 +300,7 @@ const Chat = () => {
           </span>
           <button
             title="Logout"
+            type="button"
             onClick={logout}
             className="text-md bg-blue-100 py-2 px-3 text-gray-500 border font-bold rounded-lg flex gap-3"
           >
@@ -234,6 +318,15 @@ const Chat = () => {
             </svg>
             Logout
           </button>
+          {isContextMenuVisible && (
+            <ContextMenu
+              options={contextMenuOptions}
+              cordinates={contextMenuCordinates}
+              contextMenu={isContextMenuVisible}
+              setContextMenu={setIsContextMenuVisible}
+            />
+          )}
+          {grabPhoto && <PhotoPicker onChange={photoPickerChange} />}
         </div>
       </div>
       <div className="flex flex-col bg-blue-100 w-2/3 p-2 border border-l-gray-300">

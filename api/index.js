@@ -117,6 +117,64 @@ app.post("/api/logout", (req, res) => {
   res.cookie("token", "", { sameSite: "none", secure: true }).json("ok")
 })
 
+// Route to handle the image upload
+app.post(
+  "/api/upload-profile-image",
+  express.json(),
+  upload.single("profileImage"),
+  async (req, res) => {
+    const profilePhoto = req.file
+    const { remove } = req.body
+    const userData = await getUserDataFromRequest(req)
+    const photoURL = profilePhoto && !remove ? profilePhoto.filename : null
+
+    if (remove && userData.photoURL) {
+      // If the 'remove' field is true and the user has a profile photo,
+      // delete the profile photo file from the 'dp' folder
+      fs.unlink(__dirname + "/dp/" + userData.photoURL, (err) => {
+        if (err) {
+          console.error("Error deleting profile photo file:", err)
+        } else {
+          console.log("Profile photo file deleted successfully")
+        }
+      })
+    }
+    try {
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: userData.userId }, // Assuming you have a userId property on the WebSocket connection object
+        { photoURL: photoURL },
+        { new: true } // This option returns the updated user object
+      )
+      jwt.sign(
+        {
+          userId: updatedUser._id,
+          username: updatedUser.username,
+          photoURL: photoURL,
+        },
+        jwtSecret,
+        {},
+        (err, token) => {
+          if (err) throw err
+          res
+            .cookie("token", token, { sameSite: "none", secure: true })
+            .status(201)
+
+          // If the profile photo is removed, send a 204 No Content status code
+          if (remove) {
+            return res.end()
+          } else {
+            // If a new photo is uploaded, send the photoURL in the JSON response
+            return res.json(photoURL)
+          }
+        }
+      )
+    } catch (err) {
+      if (err) throw err
+      res.status(500).json("error")
+    }
+  }
+)
+
 app.post("/api/register", upload.single("profilePhoto"), async (req, res) => {
   const { username, password, email } = req.body
   const profilePhoto = req.file
