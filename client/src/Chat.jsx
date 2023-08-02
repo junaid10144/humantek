@@ -328,9 +328,10 @@ const Chat = () => {
     }
   }, [messages])
 
-  const onlinePeopleExclOurUser = { ...onlinePeople }
-  delete onlinePeopleExclOurUser[id] // We don't need to recommend this because it creates undefined holes, but it is necessary to remove the user from the onlinePeople list.
+  // const onlinePeopleExclOurUser = { ...onlinePeople }
+  // delete onlinePeopleExclOurUser[id] // We don't need to recommend this because it creates undefined holes, but it is necessary to remove the user from the onlinePeople list.
 
+  const { [id]: _, ...onlinePeopleExclOurUser } = onlinePeople
   const messagesWithoutDupes = uniqBy(messages, "_id")
 
   return (
