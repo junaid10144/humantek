@@ -134,6 +134,7 @@ const Chat = () => {
       const currentUser = res.data.find((p) => p._id === id)
       if (currentUser) {
         setProfile(currentUser.photoURL)
+        setUsername(currentUser.username)
       }
       //console.log("online People=> ", onlinePeople)
       const offlinePeopleArr = res.data
