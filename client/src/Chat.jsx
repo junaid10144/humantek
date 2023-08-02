@@ -147,7 +147,26 @@ const Chat = () => {
     } else if ("text" in messageData) {
       if (messageData.sender === selectedUserId) {
         setMessages((prev) => [...prev, { ...messageData }])
+      } else {
+        // Show notification for new message if the sender is not the selected user
+        showNotification(messageData.sender, messageData.text)
       }
+    }
+  }
+
+  function showNotification(sender, text) {
+    if (Notification.permission === "granted") {
+      new Notification(sender, {
+        body: text,
+      })
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          new Notification(sender, {
+            body: text,
+          })
+        }
+      })
     }
   }
 
