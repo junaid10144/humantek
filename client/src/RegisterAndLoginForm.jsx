@@ -7,16 +7,16 @@ const RegisterAndLoginForm = () => {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [profile, setProfile] = useState(null)
+  const [photo, setPhoto] = useState(null)
   const [isLoginOrRegister, setIsLoginOrRegister] = useState("login")
-  const { setUsername: setLoggedInUserName, setId } = useContext(UserContext)
+  const { setId } = useContext(UserContext)
 
   async function handleSubmit(ev) {
     ev.preventDefault()
     if (isLoginOrRegister === "register") {
       console.log("make request")
       const formData = new FormData()
-      formData.append("profilePhoto", profile)
+      formData.append("profilePhoto", photo)
       formData.append("username", username)
       formData.append("password", password)
       formData.append("email", email)
@@ -30,7 +30,6 @@ const RegisterAndLoginForm = () => {
       const { data } = await axios.post("login", { email, password })
       setId(data.id)
     }
-    setLoggedInUserName(username)
   }
 
   return (
@@ -71,7 +70,7 @@ const RegisterAndLoginForm = () => {
               <input
                 type="file"
                 className="hidden"
-                onChange={(ev) => setProfile(ev.target.files[0])}
+                onChange={(ev) => setPhoto(ev.target.files[0])}
               />
               <img src="/addAvatar.png" className="w-8" />
               Add an avatar
@@ -101,7 +100,7 @@ const RegisterAndLoginForm = () => {
               type="email"
               value={email}
               onChange={(ev) => setEmail(ev.target.value)}
-              placeholder="Email"
+              placeholder="email"
               className="block w-full rounded-sm p-2 mb-2 border"
             />
             <input

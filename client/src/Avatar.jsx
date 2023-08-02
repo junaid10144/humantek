@@ -11,6 +11,12 @@ const Avatar = ({ userId, username, online, photoURL }) => {
   const userIdBase10 = parseInt(userId, 16)
   const colorIndex = userIdBase10 % colors.length
   const color = colors[colorIndex]
+  // if (photoURL === "null") {
+  //   console.log(
+  //     "--------------------------found--------------------------------------(`null`) blow is detail"
+  //   )
+  //   console.log(userId, username, online, photoURL)
+  // }
   return (
     <div
       className={"w-12 h-12 relative rounded-full flex items-center " + color}
@@ -23,7 +29,7 @@ const Avatar = ({ userId, username, online, photoURL }) => {
         <img
           src={`${import.meta.env.VITE_API_BASE_URL}/dp/${photoURL}`}
           alt=""
-          className="w-full rounded-full object-cover"
+          className="w-12 h-12 rounded-full object-cover"
         />
       )}
       {online && (

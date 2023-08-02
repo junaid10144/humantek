@@ -3,7 +3,7 @@ import { UserContext } from "./UserContext"
 import { uniqBy } from "lodash"
 import axios from "axios"
 import Contact from "./Contact"
-import Logo from "./Logo" // replace avater
+import Logo from "./Logo"
 import ContextMenu from "./ContextMenu"
 import PhotoPicker from "./PhotoPicker"
 
@@ -18,6 +18,8 @@ const Chat = () => {
     useContext(UserContext)
   const divUnderMessages = useRef()
   const [grabPhoto, setGrabPhoto] = useState(false)
+  const [notificationShownForMessage, setNotificationShownForMessage] =
+    useState({})
 
   const [contextMenuCordinates, setContextMenuCordinates] = useState({
     x: 0,
@@ -34,8 +36,6 @@ const Chat = () => {
       name: "Upload Photo",
       callback: async () => {
         setGrabPhoto(true)
-        //setIsContextMenuVisible(false)
-        //--------------
       },
     },
     {
@@ -96,19 +96,31 @@ const Chat = () => {
 
   useEffect(() => {
     connectToWs()
+
+    return () => {
+      // Clean up WebSocket connection when the component unmounts
+      if (ws) {
+        ws.removeEventListener("message", handleMessage)
+        ws.close()
+      }
+    }
   }, [selectedUserId])
 
   function connectToWs() {
-    const ws = new WebSocket(import.meta.env.VITE_WS_URL) //https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
-    setWs(ws)
-    ws.addEventListener("message", handleMessage)
-    ws.addEventListener("close", () => {
-      setTimeout(() => {
-        //console.log("Disconnected. Trying to reconnect")
-        connectToWs()
-      }, 1000)
-    })
+    // Check if there is already an active WebSocket connection
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      const newWs = new WebSocket(import.meta.env.VITE_WS_URL) //https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+      setWs(newWs)
+      newWs.addEventListener("message", handleMessage)
+      newWs.addEventListener("close", () => {
+        setTimeout(() => {
+          //console.log("Disconnected. Trying to reconnect")
+          connectToWs() // Try to reconnect on close
+        }, 1000)
+      })
+    }
   }
+
   useEffect(() => {
     if (selectedUserId) {
       axios.get("/messages/" + selectedUserId).then((res) => {
@@ -119,6 +131,11 @@ const Chat = () => {
 
   useEffect(() => {
     axios.get("/people").then((res) => {
+      const currentUser = res.data.find((p) => p._id === id)
+      if (currentUser) {
+        setProfile(currentUser.photoURL)
+      }
+      //console.log("online People=> ", onlinePeople)
       const offlinePeopleArr = res.data
         .filter((p) => p._id !== id)
         .filter((p) => !Object.keys(onlinePeople).includes(p._id))
@@ -131,12 +148,77 @@ const Chat = () => {
   }, [onlinePeople])
 
   function showOnlinePeople(peopleArray) {
-    const people = {}
+    const newActivePeople = {}
     peopleArray.forEach(({ userId, username, photoURL }) => {
-      people[userId] = username + "," + photoURL
+      if (!newActivePeople[userId]) {
+        newActivePeople[userId] = username + "," + photoURL
+      }
     })
-    //console.log(people)
-    setOnlinePeople(people)
+
+    // console.log("newActivePeople: => ", newActivePeople)
+    // console.log(
+    //   "length  of peopleArray or messageData.online => ",
+    //   peopleArray.length
+    // )
+    // console.log(
+    //   "length of newActivePeople => ",
+    //   Object.keys(newActivePeople).length
+    // )
+    // function objectsAreEqual(obj1, obj2) {
+    //   console.log("comparing")
+    //   const obj1Keys = Object.keys(obj1)
+    //   const obj2Keys = Object.keys(obj2)
+
+    //   if (obj1Keys.length !== obj2Keys.length) {
+    //     return false
+    //   }
+
+    //   for (const key of obj1Keys) {
+    //     if (obj1[key] !== obj2[key]) {
+    //       return false
+    //     }
+    //   }
+
+    //   return true
+    // }
+
+    function objectsAreEqual(obj1, obj2) {
+      // console.log(">>>>>>>comparing")
+      // console.log(obj1)
+      // console.log(obj2)
+      const obj1Keys = Object.keys(obj1)
+      const obj2Keys = Object.keys(obj2)
+
+      if (obj1Keys.length !== obj2Keys.length) {
+        return false
+      }
+
+      for (const key of obj1Keys) {
+        // console.log(`Key: ${key}`)
+        // console.log(`obj1[key]: ${obj1[key]}`)
+        // console.log(`obj2[key]: ${obj2[key]}`)
+
+        // Split the values by ',' and compare the second part
+        const [value1Name, value1Photo] = obj1[key].split(",")
+        const [value2Name, value2Photo] = obj2[key].split(",")
+
+        if (value1Name !== value2Name || value1Photo !== value2Photo) {
+          return false
+        }
+      }
+
+      return true
+    }
+
+    // Check if the newPeople is different from the existing onlinePeople state
+    if (
+      Object.keys(newActivePeople).length > 1 &&
+      !objectsAreEqual(newActivePeople, onlinePeople)
+      //JSON.stringify(newActivePeople) !== JSON.stringify(onlinePeople) // not working i think because onlinePeople is always empty
+    ) {
+      // ( peopleArray.length > 1  || peopleArray[0].userId !== id)
+      setOnlinePeople(newActivePeople)
+    }
   }
 
   function handleMessage(ev) {
@@ -156,15 +238,36 @@ const Chat = () => {
 
   function showNotification(sender, text) {
     if (Notification.permission === "granted") {
-      new Notification(sender, {
-        body: text,
-      })
+      if (!notificationShownForMessage[sender]) {
+        // Check if a notification for this sender has already been shown
+        const notification = new Notification(sender, {
+          body: text,
+        })
+
+        notification.onclick = () => {
+          // Handle notification click, e.g., focus on the chat with the sender
+          setSelectedUserId(sender)
+          notification.close()
+        }
+
+        // Update the state to indicate that the notification has been shown for this sender
+        setNotificationShownForMessage((prev) => ({
+          ...prev,
+          [sender]: true,
+        }))
+
+        // Schedule to reset the notification state after a certain period (e.g., 5 seconds)
+        setTimeout(() => {
+          setNotificationShownForMessage((prev) => ({
+            ...prev,
+            [sender]: false,
+          }))
+        }, 5000) // 5 seconds (adjust the time as per your preference)
+      }
     } else if (Notification.permission !== "denied") {
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
-          new Notification(sender, {
-            body: text,
-          })
+          showNotification(sender, text)
         }
       })
     }
@@ -182,7 +285,7 @@ const Chat = () => {
   function addgroup() {}
 
   function sendMessage(ev, file = null) {
-    if (ev) ev.preventDefault() //form submit hoga to page reload hota h isi liye preventDefault krty jab bhi button ki type submit hoti
+    if (ev) ev.preventDefault()
     ws.send(
       JSON.stringify({
         recipient: selectedUserId,
@@ -223,18 +326,17 @@ const Chat = () => {
     const div = divUnderMessages.current
     if (div) {
       div.scrollIntoView({ behavior: "smooth", block: "end" })
-      //div.scrollTop = div.scrollHeight;
     }
   }, [messages])
 
-  // const onlinePeopleExclOurUser = { ...onlinePeople }
-  // delete onlinePeopleExclOurUser[id] don't recommend becuase it create undefined holes
-  const { [id]: _, ...onlinePeopleExclOurUser } = onlinePeople
+  const onlinePeopleExclOurUser = { ...onlinePeople }
+  delete onlinePeopleExclOurUser[id] // We don't need to recommend this because it creates undefined holes, but it is necessary to remove the user from the onlinePeople list.
 
   const messagesWithoutDupes = uniqBy(messages, "_id")
 
   return (
     <div className="flex h-screen">
+      {/* Sidebar */}
       <div className="bg-white w-1/3 flex flex-col">
         <div className="flex-grow">
           <div className="flex items-center justify-items-start">
@@ -284,7 +386,6 @@ const Chat = () => {
             />
           ))}
         </div>
-
         <div className="p-2 text-center flex items-center justify-around">
           <span className="mr-2 text-sm text-gray-600 flex items-center gap-3 text-blue-900 font-bold text-2xl font-serif">
             <div
@@ -330,7 +431,8 @@ const Chat = () => {
               className="w-6 h-6"
             >
               <path
-                fillRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm5.03 4.72a.75.75 0 010 1.06l-1.72 1.72h10.94a.75.75 0 010 1.5H10.81l1.72 1.72a.75.75 0 11-1.06 1.06l-3-3a.75.75 0 010-1.06l3-3a.75.75 0 011.06 0z"
                 clipRule="evenodd"
               />
@@ -348,6 +450,7 @@ const Chat = () => {
           {grabPhoto && <PhotoPicker onChange={photoPickerChange} />}
         </div>
       </div>
+      {/* Main chat area */}
       <div className="flex flex-col bg-blue-100 w-2/3 p-2 border border-l-gray-300">
         <div className="flex-grow">
           {!selectedUserId && (
@@ -365,6 +468,7 @@ const Chat = () => {
               </div>
             </div>
           )}
+          {/* Message input section */}
           {!!selectedUserId && (
             <div className="relative h-full">
               <div className="overflow-y-scroll absolute top-0 left-0 right-0 bottom-2">

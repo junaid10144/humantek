@@ -81,7 +81,7 @@ app.get("/api/profile", (req, res) => {
   if (token) {
     jwt.verify(token, jwtSecret, {}, (err, userData) => {
       if (err) throw err
-      console.log("userData=" + userData)
+      console.log("userData =>", userData)
       res.json(userData)
     })
   } else {
