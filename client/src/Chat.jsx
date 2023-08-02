@@ -282,8 +282,6 @@ const Chat = () => {
     })
   }
 
-  function addgroup() {}
-
   function sendMessage(ev, file = null) {
     if (ev) ev.preventDefault()
     ws.send(
@@ -341,7 +339,7 @@ const Chat = () => {
         <div className="flex-grow">
           <div className="flex items-center justify-items-start">
             <Logo />
-            <button
+            {/* <button
               title="Add group"
               className="flex gap-3 bg-blue-100 border rounded-md py-1 px-2 ml-32 font-bold text-gray-500"
               onClick={addgroup}
@@ -361,7 +359,7 @@ const Chat = () => {
                 />
               </svg>
               New Group
-            </button>
+            </button> */}
           </div>
           {Object.keys(onlinePeopleExclOurUser).map((userId) => (
             <Contact
